@@ -50,3 +50,4 @@ python ip_lookup.py --as-number 15169 --target-subnet 8.8.4.4
 - Only IPv4 addresses are supported at the moment.
 - CIDR notation is not accepted for --ip-addr or --as-number.
 - Some lookups may take a few seconds depending on WHOIS server response times.
+- Additional threat intelligence capabilities to be added in the future.
