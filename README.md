@@ -1,5 +1,8 @@
 # IP Lookup Utility
 
+# Author
+Clarence R. Subia
+
 ## Description
 A command-line tool to retrieve IP address details, Autonomous System Number (ASN) information, and WHOIS data.
 This tool can be used for network diagnostics, threat analysis, and general IP research.
@@ -51,3 +54,4 @@ python ip_lookup.py --as-number 15169 --target-subnet 8.8.4.4
 - CIDR notation is not accepted for --ip-addr or --as-number.
 - Some lookups may take a few seconds depending on WHOIS server response times.
 - Additional threat intelligence capabilities to be added in the future.
+
