@@ -1,5 +1,8 @@
 from unittest.mock import patch, MagicMock
-from ip_lookup_script import validate_ip_address, subnet_checker, ip_info_lookup
+from ip_lookup_script import validate_ip_address
+from ip_lookup_script import subnet_checker
+from ip_lookup_script import ip_info_lookup
+
 
 def test_validate_ip_address_valid():
     assert validate_ip_address("192.168.1.1")
