@@ -1,7 +1,7 @@
 from unittest.mock import patch, MagicMock
-from IPLookupUtility import validate_ip_address
-from IPLookupUtility import subnet_checker
-from IPLookupUtility import ip_info_lookup
+from IPLookupUtility.iplookup import validate_ip_address
+from IPLookupUtility.iplookup import subnet_checker
+from IPLookupUtility.iplookup import ip_info_lookup
 
 
 def test_validate_ip_address_valid():
