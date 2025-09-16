@@ -1,6 +1,7 @@
 # Python Standard Packages
 import re
 import os
+import sys
 import json
 
 # External Packages
@@ -12,6 +13,7 @@ import ipaddress
 import pyasn
 from ipwhois import IPWhois
 
+
 # Print colors
 G = "\033[92m"
 C = "\033[36m"
@@ -21,9 +23,24 @@ B = "\033[1m"
 E = "\033[00m"
 
 
+# Directory setup
+basedir = os.path.abspath(os.path.dirname(__file__))
+data_path = os.path.join(basedir, "data")
+
+
+if not os.path.exists(data_path):
+    print(f"{Y}{B}[!] ASN Database not found. Installing and downloading necessary files.{E}")
+    os.mkdir(data_path)
+    contents = os.listdir(data_path)
+    if not contents:
+        os.system("./setup_asn_db.sh")
+        print(f"{G}{B}[*] Download complete. Please rerun script.{E}")
+        sys.exit()
+
+
 def ip_whois_lookup(ipaddr):
     print(f"\n{G}{B}[*] IP Lookup using WHOIS RDAP...{E}")
-    lookup = IPWhois(ip)
+    lookup = IPWhois(ipaddr)
     resp = lookup.lookup_rdap()
     if resp:
         return {
@@ -124,6 +141,24 @@ def dict_printer(dict_data):
         print(f"{C}{key}{E}: {value}")
 
 
+def vt_get_ip_address_info(ipaddr):
+    result = {}
+    VT_TOKEN = os.environ.get("VT_TOKEN")
+    headers = {"X-Apikey": VT_TOKEN}
+
+    resp = requests.get(f"https://www.virustotal.com/api/v3/ip_addresses/{ipaddr}", headers=headers)
+
+    if resp.ok:
+        data = resp.json()["data"]["attributes"]
+        analysis = data["last_analysis_stats"]
+        votes = data["last_analysis_results"]
+        mal_votes = [vote for vote in votes if votes[vote]["category"] in ("malicious", "suspicious")]
+        result["analysis"] = analysis
+        result["malicious_vendor_verdicts"] = mal_votes
+
+    return result
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="IP Lookup Utility. Retrieves IP Info, ASN Info, and WHOIS Info.")
     parser.add_argument("--ip-addr", help="IPv4 address. Note: CIDR is not accepted.")
@@ -148,8 +183,22 @@ if __name__ == "__main__":
 
             ip_asn_info_resp = ip_asn_info_lookup(ipaddr=ip)
             dict_printer(ip_asn_info_resp)
+
+            vt_result = vt_get_ip_address_info(ipaddr=ip)
+            analysis = vt_result["analysis"]
+            print(f"\n{G}{B}[*] Virus Total Info...{E}")
+            print(f"{C}Analysis:{E}")
+            for key, value in analysis.items():
+                if value != 0:
+                    print(f"{C}{key}: {value}")
+
+            if vt_result["malicious_vendor_verdicts"]:
+                print(f"\n{C}Malicious / Suspicious Vendor Verdict:{E}")
+                print(", ".join(vt_result["malicious_vendor_verdicts"]))
+
         else:
             print("IP address is invalid!")
+
     elif as_number:
         if target_subnet:
             if validate_ip_address(target_subnet):
