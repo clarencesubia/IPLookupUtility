@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "IPLookupUtility"
+version = "0.1.0"
+description = "A utility for IP lookups"
+authors = [
+    { name = "Clarence Subia", email = "subiaclarence96@gmail.com" }
+]
+readme = "README.md"
+requires-python = ">=3.9"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["IPLookupUtility"]
