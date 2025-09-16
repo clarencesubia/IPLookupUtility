@@ -20,18 +20,26 @@ pip3 install -r requirements.txt
 
 ## Setup IP Info API Token
 - Signup for free API token: https://ipinfo.io/signup
-- After retrieving the token, export token to environment:
+- After retrieving the token, export token to environment (recommended to add to .bashrc):
 ```
 export IPINFO_TOKEN="<TOKEN>"
 ```
 
 ## Setup ASN DB
-- After install pyasn, run the following commands under the script's directory:
+- After installing pyasn, run the following commands under the script's directory:
 ```
 pyasn_util_download.py --latest --filename ./data/pyasnrib.bz2
-pyasn_util_convert.py --single ./data/pyasnrib.bz2 asndb.dat
-pyasn_util_asnames.py -o ./data/datasnames.json
+pyasn_util_convert.py --single ./data/pyasnrib.bz2 ./data/asndb.dat
+pyasn_util_asnames.py -o ./data/asnames.json
 ```
+
+## Setup VirusTotal
+- Create API key from https://www.virustotal.com/gui/user/subiacla96/apikey
+- Export to environment (recommended to add to .bashrc):
+```
+export VT_TOKEN="<TOKEN>"
+```
+
 
 ## Usage
 - Perform IP Lookup
