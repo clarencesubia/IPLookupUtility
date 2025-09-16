@@ -12,6 +12,7 @@ This tool can be used for network diagnostics, threat analysis, and general IP r
 - ASN Info Lookup – Retrieve details for an Autonomous System Number, including announced prefixes.
 - WHOIS Lookup – Fetch WHOIS registration data for IP addresses or ASN ranges.
 - Subnet Target Search – Find whether a specific IP is covered by an ASN's announced prefixes.
+- Check if IP has virustotal analysis and verdicts.
 
 ## Install python packages
 ```
