@@ -54,6 +54,11 @@ python3 iplookuputil.py --as-number 13335
 python ip_lookup.py --as-number 15169 --target-subnet 8.8.4.4
 ```
 
+- Bulk IP checks using file containing IP addresses
+```
+python3 iplookuputil.py --ip-list ip_list.txt --vt
+```
+
 ## Notes
 - Only IPv4 addresses are supported at the moment.
 - CIDR notation is not accepted for --ip-addr or --as-number.
