@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Python Standard Packages
 import re
 import os
@@ -11,7 +12,7 @@ import ipaddress
 
 # IP Lookup Specific Packages
 import pyasn
-from ipwhois import IPWhois
+import ipwhois
 
 
 # Print colors
@@ -38,42 +39,54 @@ if not os.path.exists(data_path):
         sys.exit()
 
 
+if IPINFO_TOKEN := os.environ.get("IPINFO_TOKEN"):
+    pass
+else: 
+    print(f"{Y}{B}\n[!] Please setup API token from https://ipinfo.io/signup.")
+    sys.exit()
+
+
 def ip_whois_lookup(ipaddr):
-    print(f"\n{G}{B}[*] IP Lookup using WHOIS RDAP...{E}")
-    lookup = IPWhois(ipaddr)
-    resp = lookup.lookup_rdap()
-    if resp:
+    print(f"\n{G}{B}[+] IP Lookup via WHOIS RDAP{E}")   
+    try:
+        lookup = ipwhois.IPWhois(ipaddr)
+        resp = lookup.lookup_rdap()
+        if resp:
+            return {
+                "name": resp["network"]["name"],
+                "asn": resp["asn"],
+                "asn_cidr": resp["asn_cidr"],
+                "net_cidr": resp["network"]["cidr"],
+                "net_start_address": resp["network"]["start_address"],
+                "net_end_address": resp["network"]["end_address"],
+                "network": resp["network"]["handle"],
+                "status": ", ".join(resp["network"]["status"]),
+                "country": resp["asn_country_code"],
+                "description": resp["asn_description"],
+            }
+    except ipwhois.exceptions.IPDefinedError as err:
         return {
-            "name": resp["network"]["name"],
-            "asn": resp["asn"],
-            "asn_cidr": resp["asn_cidr"],
-            "net_cidr": resp["network"]["cidr"],
-            "net_start_address": resp["network"]["start_address"],
-            "net_end_address": resp["network"]["end_address"],
-            "network": resp["network"]["handle"],
-            "status": ", ".join(resp["network"]["status"]),
-            "country": resp["asn_country_code"],
-            "description": resp["asn_description"],
+            "error": err
         }
+
     
 
 def ip_info_lookup(ipaddr):
-    print(f"\n{G}{B}[*] IP Lookup using IP Info...{E}")
-    IPINFO_TOKEN = os.environ.get("IPINFO_TOKEN")
+    print(f"\n{G}{B}[+] IP Lookup via IP Info{E}")
     resp = requests.get(f"https://api.ipinfo.io/lite/{ipaddr}?token={IPINFO_TOKEN}").json()
     return resp
 
 
 def ip_asn_info_lookup(ipaddr):
-    print(f"\n{G}{B}[*] ASN Lookup using MRT/RIB BGP archive...{E}")
-    asndb = pyasn.pyasn('./data/asndb.dat')
+    print(f"\n{G}{B}[+] ASN Lookup using MRT/RIB BGP archive{E}")
+    asndb = pyasn.pyasn(f'{data_path}/asndb.dat')
     resp = asndb.lookup(ipaddr)
     as_number = str(resp[0])
     as_prefix = resp[1]
 
-    with open("./data/asnames.json", "r") as f:
+    with open(f"{data_path}/asnames.json", "r") as f:
         asn_names = json.load(f)
-        as_name = asn_names[as_number]
+        as_name = asn_names.get(as_number, None)
 
     return {
         "as_name": as_name,
@@ -83,11 +96,11 @@ def ip_asn_info_lookup(ipaddr):
 
 
 def asn_info_lookup_all_prefix(asn):
-    asndb = pyasn.pyasn('./data/asndb.dat')
+    asndb = pyasn.pyasn(f'{data_path}/asndb.dat')
     as_prefixes = asndb.get_as_prefixes(asn)
     as_size = asndb.get_as_size(asn)
 
-    with open("./data/asnames.json", "r") as f:
+    with open(f"{data_path}/asnames.json", "r") as f:
         asn_names = json.load(f)
         as_name = asn_names[asn]
 
@@ -100,11 +113,11 @@ def asn_info_lookup_all_prefix(asn):
 
 
 def asn_info_lookup_prefix(asn, target_subnet):
-    asndb = pyasn.pyasn('./data/asndb.dat')
+    asndb = pyasn.pyasn(f'{data_path}/asndb.dat')
     as_prefixes = asndb.get_as_prefixes(asn)
     as_size = asndb.get_as_size(asn)
 
-    with open("./data/asnames.json", "r") as f:
+    with open(f"{data_path}/asnames.json", "r") as f:
         asn_names = json.load(f)
         as_name = asn_names[asn]
 
@@ -142,8 +155,13 @@ def dict_printer(dict_data):
 
 
 def vt_get_ip_address_info(ipaddr):
+    if VT_TOKEN := os.environ.get("VT_TOKEN"):
+        pass
+    else: 
+        print(f"{Y}{B}\n[!] Please setup API key from https://www.virustotal.com/gui/user/<username>/apikey")
+        sys.exit()
+
     result = {}
-    VT_TOKEN = os.environ.get("VT_TOKEN")
     headers = {"X-Apikey": VT_TOKEN}
 
     resp = requests.get(f"https://www.virustotal.com/api/v3/ip_addresses/{ipaddr}", headers=headers)
@@ -162,42 +180,57 @@ def vt_get_ip_address_info(ipaddr):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="IP Lookup Utility. Retrieves IP Info, ASN Info, and WHOIS Info.")
     parser.add_argument("--ip-addr", help="IPv4 address. Note: CIDR is not accepted.")
+    parser.add_argument("--ip-list", help="List of IP addresses in text file.")
     parser.add_argument("--as-number", help="Autonomous System Number. Note: CIDR is not accepted.")
     parser.add_argument("--target-subnet", help="Target IP address to look for from AS prefixes.")
+    parser.add_argument("--vt", action="store_true", help="Check virustotal verdicts.")
     args = parser.parse_args()
 
     ip = args.ip_addr
+    ip_list = args.ip_list
     as_number = args.as_number
     target_subnet = args.target_subnet
 
+    ips = None
+
     if ip:
-        if validate_ip_address(ip):
-            ip = ip.split("/")[0]
-            print(f"{G}{B}[*] Looking up information for IP Address {ip} [*]")
+        ips = [ip]
+    elif ip_list:
+        with open(ip_list, "r") as f:
+            ips = [i.strip() for i in f.readlines()]
 
-            ip_whois_resp = ip_whois_lookup(ipaddr=ip)
-            dict_printer(ip_whois_resp)
+    if ips:
+        for ip in ips:
+            if validate_ip_address(ip):
+                ip = ip.split("/")[0]
+                print(f"\n{G}==================================================================={E}")
+                print(f"{G}{B}[*] IP Information check for: {ip}")
+                print(f"{G}==================================================================={E}")
 
-            ip_info_resp = ip_info_lookup(ipaddr=ip)
-            dict_printer(ip_info_resp)
+                ip_whois_resp = ip_whois_lookup(ipaddr=ip)
+                dict_printer(ip_whois_resp)
 
-            ip_asn_info_resp = ip_asn_info_lookup(ipaddr=ip)
-            dict_printer(ip_asn_info_resp)
+                ip_info_resp = ip_info_lookup(ipaddr=ip)
+                dict_printer(ip_info_resp)
 
-            vt_result = vt_get_ip_address_info(ipaddr=ip)
-            analysis = vt_result["analysis"]
-            print(f"\n{G}{B}[*] Virus Total Info...{E}")
-            print(f"{C}Analysis:{E}")
-            for key, value in analysis.items():
-                if value != 0:
-                    print(f"{C}{key}: {value}")
+                ip_asn_info_resp = ip_asn_info_lookup(ipaddr=ip)
+                dict_printer(ip_asn_info_resp)
 
-            if vt_result["malicious_vendor_verdicts"]:
-                print(f"\n{C}Malicious / Suspicious Vendor Verdict:{E}")
-                print(", ".join(vt_result["malicious_vendor_verdicts"]))
+                if args.vt:
+                    vt_result = vt_get_ip_address_info(ipaddr=ip)
+                    analysis = vt_result["analysis"]
+                    print(f"\n{G}{B}[*] Virus Total Info...{E}")
+                    print(f"{C}Analysis:{E}")
+                    for key, value in analysis.items():
+                        if value != 0:
+                            print(f"{C}{key}: {value}")
 
-        else:
-            print("IP address is invalid!")
+                    if vt_result["malicious_vendor_verdicts"]:
+                        print(f"\n{C}Malicious / Suspicious Vendor Verdict:{E}")
+                        print(", ".join(vt_result["malicious_vendor_verdicts"]))
+
+            else:
+                print("IP address is invalid!")
 
     elif as_number:
         if target_subnet:
