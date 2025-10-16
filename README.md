@@ -59,6 +59,15 @@ python ip_lookup.py --as-number 15169 --target-subnet 8.8.4.4
 python3 iplookuputil.py --ip-list ip_list.txt --vt
 ```
 
+- Payload sample for IP List
+```
+192.10.10.1
+192.10.10.2
+192.10.10.3
+192.10.10.4
+192.10.10.5
+```
+
 ## Notes
 - Only IPv4 addresses are supported at the moment.
 - CIDR notation is not accepted for --ip-addr or --as-number.
